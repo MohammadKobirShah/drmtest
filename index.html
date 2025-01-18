@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DRM Live Stream Player</title>
+    <script src="https://cdn.jsdelivr.net/npm/shaka-player/dist/shaka-player.ui.min.js"></script>
+    <script src="https://cdn.jwplayer.com/libraries/KB5zFt7A.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/shaka-player/dist/controls.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+        }
+        #controls {
+            width: 80%;
+            margin: 20px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        #player-container {
+            width: 80%;
+            position: relative;
+            padding-top: 56.25%;
+        }
+        #video-player, #shaka-player {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <h1>DRM Live Stream Player</h1>
+    <div id="controls">
+        <label>
+            Media Stream URL:
+            <input type="text" id="stream-url" placeholder="Enter stream URL" style="width: 100%;">
+        </label>
+        <label>
+            DRM License URL:
+            <input type="text" id="license-url" placeholder="Enter license URL" style="width: 100%;">
+        </label>
+        <label>
+            Cookie Value:
+            <input type="text" id="cookie-value" placeholder="Enter cookie value" style="width: 100%;">
+        </label>
+        <label>
+            Origin Value:
+            <input type="text" id="origin-value" placeholder="Enter origin value" style="width: 100%;">
+        </label>
+        <label>
+            Referer Value:
+            <input type="text" id="referer-value" placeholder="Enter referer value" style="width: 100%;">
+        </label>
+        <label>
+            Player Selection:
+            <select id="player-selection">
+                <option value="shaka">Shaka Player</option>
+                <option value="jw">JW Player</option>
+            </select>
+        </label>
+        <button onclick="initializePlayer()">Play Stream</button>
+    </div>
+    <div id="player-container">
+        <video id="shaka-player" controls style="display: none;"></video>
+        <div id="video-player" style="display: none;"></div>
+    </div>
+
+    <script>
+        let shakaPlayer;
+        const streamUrlInput = document.getElementById('stream-url');
+        const licenseUrlInput = document.getElementById('license-url');
+        const cookieValueInput = document.getElementById('cookie-value');
+        const originValueInput = document.getElementById('origin-value');
+        const refererValueInput = document.getElementById('referer-value');
+        const playerSelection = document.getElementById('player-selection');
+        const shakaElement = document.getElementById('shaka-player');
+        const jwElement = document.getElementById('video-player');
+
+        async function initializePlayer() {
+            const streamUrl = streamUrlInput.value;
+            const licenseUrl = licenseUrlInput.value;
+            const cookieValue = cookieValueInput.value;
+            const originValue = originValueInput.value;
+            const refererValue = refererValueInput.value;
+            const selectedPlayer = playerSelection.value;
+
+            if (selectedPlayer === 'shaka') {
+                jwElement.style.display = 'none';
+                shakaElement.style.display = 'block';
+
+                if (shakaPlayer) shakaPlayer.destroy();
+                shakaPlayer = new shaka.Player(shakaElement);
+
+                shakaPlayer.configure({
+                    drm: {
+                        servers: {
+                            'com.widevine.alpha': licenseUrl,
+                            'com.microsoft.playready': licenseUrl,
+                            'org.w3.clearkey': licenseUrl
+                        },
+                        advanced: {
+                            'com.widevine.alpha': {
+                                headers: {
+                                    'Cookie': cookieValue,
+                                    'Origin': originValue,
+                                    'Referer': refererValue
+                                }
+                            },
+                            'com.microsoft.playready': {
+                                headers: {
+                                    'Cookie': cookieValue,
+                                    'Origin': originValue,
+                                    'Referer': refererValue
+                                }
+                            },
+                            'org.w3.clearkey': {
+                                headers: {
+                                    'Cookie': cookieValue,
+                                    'Origin': originValue,
+                                    'Referer': refererValue
+                                }
+                            }
+                        }
+                    }
+                });
+
+                try {
+                    await shakaPlayer.load(streamUrl);
+                    console.log('Shaka Player loaded successfully!');
+                } catch (error) {
+                    console.error('Error loading Shaka Player:', error);
+                }
+            } else if (selectedPlayer === 'jw') {
+                shakaElement.style.display = 'none';
+                jwElement.style.display = 'block';
+
+                jwplayer('video-player').setup({
+                    file: streamUrl,
+                    drm: {
+                        widevine: {
+                            url: licenseUrl,
+                            headers: {
+                                'Cookie': cookieValue,
+                                'Origin': originValue,
+                                'Referer': refererValue
+                            }
+                        },
+                        clearkey: {
+                            url: licenseUrl,
+                            headers: {
+                                'Cookie': cookieValue,
+                                'Origin': originValue,
+                                'Referer': refererValue
+                            }
+                        },
+                        playready: {
+                            url: licenseUrl,
+                            headers: {
+                                'Cookie': cookieValue,
+                                'Origin': originValue,
+                                'Referer': refererValue
+                            }
+                        }
+                    }
+                });
+            }
+        }
+    </script>
+</body>
+</html>
